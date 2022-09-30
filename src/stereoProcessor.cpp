@@ -110,7 +110,7 @@ void stereoProcessor::rectifyRemap(const Mat &src1, const Mat &src2, Mat &dst1, 
 void stereoProcessor::calRectifyMap()
 {
     // Stereo rectify.
-    stereoRectify(K1, D1, K2, D2, imgSize, R, T, R1, R2, P1, P2, Q);
+    stereoRectify(K1, D1, K2, D2, imgSize, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY);
     // Calculate rectification map.
     initUndistortRectifyMap(K1, D1, R1, P1, imgSize, CV_16SC2, map11, map12);
     initUndistortRectifyMap(K2, D2, R2, P2, imgSize, CV_16SC2, map21, map22);
