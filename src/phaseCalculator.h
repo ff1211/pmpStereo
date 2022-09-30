@@ -1,0 +1,67 @@
+#ifndef PHASE_CALCULATOR
+#define PHASE_CALCULATOR
+
+#include <iostream>
+#include <vector>
+#include "stereo.h"
+
+// Struct to initialize phase calculator.
+struct pmpStereoConfig
+{
+    bool shiftSteps; // N-Step algorithm.
+    // Steps to calculate final hetero phase map.
+    // 0 for 2-step method. phase1 phase2 -> phase12, phase12 phase3 -> phase123.
+    // 1 for 3-step method. phase1 phase2 -> phase12, phase2 phase3 -> phase23, phase12 phase23 -> phase123.
+    bool heterodyneSteps;
+    TYPE freq1, freq2, freq3; // Strip frequency.
+
+    pmpStereoConfig(TYPE freq1, TYPE freq2, TYPE freq3, bool shiftSteps, bool heterodyneSteps) : freq1(freq1),
+                                                                                                 freq2(freq2),
+                                                                                                 freq3(freq3),
+                                                                                                 shiftSteps(shiftSteps),
+                                                                                                 heterodyneSteps(heterodyneSteps)
+    {
+    }
+};
+
+// Calculator for phase calculation.
+class phaseCalculator
+{
+protected:
+    // Wave-length ratio.
+    TYPE ratio_3to2, ratio_2to1, ratio_3to1;
+    // N-Step algorithm.
+    bool shiftSteps;
+    // Steps to calculate final heterodyne phase map.
+    // 0 for 2-step method. phase1 phase2 -> phase12, phase12 phase3 -> phase123.
+    // 1 for 3-step method. phase1 phase2 -> phase12, phase2 phase3 -> phase23, phase12 phase23 -> phase123.
+    bool heterodyneSteps;
+
+    // Calculate relative phase according to phase shift steps.
+    void calRelPhase_3step(const std::vector<cv::Mat> &stripImg, cv::Mat &relPhaseMap);
+    void calRelPhase_4step(const std::vector<cv::Mat> &stripImg, cv::Mat &relPhaseMap);
+
+    // Calcuate heterodyne phase.
+    TYPE calHeterodynePhase_2step(const TYPE &phase1, const TYPE &phase2, const TYPE &phase3) const;
+    TYPE calHeterodynePhase_3step(const TYPE &phase1, const TYPE &phase2, const TYPE &phase3) const;
+
+    // Calculate heterodyne phase.
+    TYPE heterodyne(const TYPE &phase1, const TYPE &phase2) const;
+
+public:
+    // Constructor.
+    phaseCalculator(const pmpStereoConfig &cfg);
+    // Destructor.
+    ~phaseCalculator();
+
+    // Update pmp algorithm parameters.
+    void updateConfig(const pmpStereoConfig &cfg);
+
+    // Calculate relative phase map.
+    void calRelPhase(const std::vector<cv::Mat> &stripImg, cv::Mat &relPhaseMap);
+
+    // Calculate absolute phase map.
+    void calAbsPhase(const std::vector<cv::Mat> &relPhaseMap, cv::Mat &absPhaseMap);
+};
+
+#endif
