@@ -3,7 +3,7 @@
 
 #include <string>
 #include <fstream>
-#include "stereo.h"
+#include "setting.h"
 
 // Struct to initialize stereo calculator.
 struct stereoConfig

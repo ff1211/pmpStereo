@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <vector>
-#include "stereo.h"
+#include "setting.h"
 
 // Struct to initialize phase calculator.
 struct pmpStereoConfig
