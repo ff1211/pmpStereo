@@ -22,14 +22,7 @@ struct stereoConfig
     cv::Rect ROI1;
     cv::Rect ROI2;
 
-    stereoConfig(cv::Size img_size, TYPE disparity_th, TYPE match_th, cv::Rect ROI_1, cv::Rect ROI_2, std::string file_path = "") : imgSize(img_size),
-                                                                                                                                    disparityTH(disparity_th),
-                                                                                                                                    matchTH(match_th),
-                                                                                                                                    ROI1(ROI_1),
-                                                                                                                                    ROI2(ROI_2),
-                                                                                                                                    filePath(file_path)
-    {
-    }
+    stereoConfig(cv::Size img_size, TYPE disparity_th, TYPE match_th, std::string file_path = "");
 };
 
 class stereoProcessor
@@ -59,8 +52,8 @@ protected:
     // Update config.
     void updateConfig(const stereoConfig &cfg);
 
-    // Binary search corresponding point.
-    TYPE binarySearch(TYPE x, unsigned int windowSize, bool interpolation, const cv::Mat &seq);
+    // Search corresponding point.
+    TYPE searchPhase(TYPE x, const cv::Mat &seq, bool interpolation = true);
     //
     TYPE interpolate(TYPE x0, TYPE x1, TYPE y0, TYPE y1, TYPE x);
 
@@ -86,9 +79,9 @@ public:
     // Load calibration result saved in xml file.
     void loadCaliResult(std::string filePath);
     // Remap to get rectified image.
-    void rectifyRemap(const cv::Mat &src1, const cv::Mat &src2, cv::Mat &dst1, cv::Mat &dst2, bool filter);
+    void rectifyRemap(const cv::Mat &src1, const cv::Mat &src2, cv::Mat &dst1, cv::Mat &dst2);
     // Match phase map and calculate disparity.
-    void calDisparity(const cv::Mat &phase1, const cv::Mat &phase2, unsigned int windowSize, cv::Mat &disparity, bool interpolation = true);
+    void calDisparity(const cv::Mat &absPhase1, const cv::Mat &absPhase2, cv::Mat &disparity, bool interpolation = true);
 };
 
 #endif

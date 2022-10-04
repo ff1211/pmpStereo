@@ -6,22 +6,18 @@
 #include "setting.h"
 
 // Struct to initialize phase calculator.
-struct pmpStereoConfig
+struct pmpConfig
 {
     bool shiftSteps; // N-Step algorithm.
     // Steps to calculate final hetero phase map.
     // 0 for 2-step method. phase1 phase2 -> phase12, phase12 phase3 -> phase123.
     // 1 for 3-step method. phase1 phase2 -> phase12, phase2 phase3 -> phase23, phase12 phase23 -> phase123.
     bool heterodyneSteps;
+    // Degree of modulation threshold.
+    TYPE BTH;
     TYPE freq1, freq2, freq3; // Strip frequency.
 
-    pmpStereoConfig(TYPE freq1, TYPE freq2, TYPE freq3, bool shiftSteps, bool heterodyneSteps) : freq1(freq1),
-                                                                                                 freq2(freq2),
-                                                                                                 freq3(freq3),
-                                                                                                 shiftSteps(shiftSteps),
-                                                                                                 heterodyneSteps(heterodyneSteps)
-    {
-    }
+    pmpConfig(TYPE freq1, TYPE freq2, TYPE freq3, TYPE B_th, bool shiftSteps, bool heterodyneSteps);
 };
 
 // Calculator for phase calculation.
@@ -36,6 +32,8 @@ protected:
     // 0 for 2-step method. phase1 phase2 -> phase12, phase12 phase3 -> phase123.
     // 1 for 3-step method. phase1 phase2 -> phase12, phase2 phase3 -> phase23, phase12 phase23 -> phase123.
     bool heterodyneSteps;
+    // Degree of modulation threshold.
+    TYPE BTH;
 
     // Calculate relative phase according to phase shift steps.
     void calRelPhase_3step(const std::vector<cv::Mat> &stripImg, cv::Mat &relPhaseMap);
@@ -50,18 +48,20 @@ protected:
 
 public:
     // Constructor.
-    phaseCalculator(const pmpStereoConfig &cfg);
+    phaseCalculator(const pmpConfig &cfg);
     // Destructor.
     ~phaseCalculator();
 
     // Update pmp algorithm parameters.
-    void updateConfig(const pmpStereoConfig &cfg);
+    void updateConfig(const pmpConfig &cfg);
 
     // Calculate relative phase map.
     void calRelPhase(const std::vector<cv::Mat> &stripImg, cv::Mat &relPhaseMap);
+    // Calculate heterodyne phase map.
+    void calHeterodynePhase(const std::vector<cv::Mat> &relPhaseMap, cv::Mat &hetetodynePhaseMap);
 
     // Calculate absolute phase map.
-    void calAbsPhase(const std::vector<cv::Mat> &relPhaseMap, cv::Mat &absPhaseMap);
+    void calAbsPhase(const std::vector<cv::Mat> &relPhaseMap, cv::Mat &absPhaseMap, bool filter = true);
 };
 
 #endif
