@@ -14,10 +14,6 @@
 #define ROOT_THREE 1.73205081
 #define TWO_THIRD 0.66666667
 #define PI_2 6.28318531
-// Nonsensical phase. Used to filter low modulation degree phase.
-// Any value out of the range of corresponding phase can be adopted.
-#define NULL_PHASE_POS 15
-#define NULL_PHASE_NEG -1
 // Floor precision.
 #define FLOOR_PRECISION 0.5
 // Type define

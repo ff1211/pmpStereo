@@ -4,11 +4,11 @@ using namespace std;
 using namespace cv;
 
 pmpConfig::pmpConfig(TYPE freq1, TYPE freq2, TYPE freq3, TYPE B_th, bool shiftSteps, bool heterodyneSteps) : freq1(freq1),
-                                                                                                                         freq2(freq2),
-                                                                                                                         freq3(freq3),
-                                                                                                                         BTH(B_th),
-                                                                                                                         shiftSteps(shiftSteps),
-                                                                                                                         heterodyneSteps(heterodyneSteps)
+                                                                                                             freq2(freq2),
+                                                                                                             freq3(freq3),
+                                                                                                             BTH(B_th),
+                                                                                                             shiftSteps(shiftSteps),
+                                                                                                             heterodyneSteps(heterodyneSteps)
 {
 }
 
@@ -47,7 +47,7 @@ void phaseCalculator::calRelPhase_3step(const vector<Mat> &stripImg, Mat &relPha
             x = 2.0 * I2 - I1 - I3;
             b = TWO_THIRD * sqrt(pow(y, 2) + pow(x, 2));
             if (b < BTH)
-                relPhaseMap.at<TYPE>(i, j) = NULL_PHASE_POS;
+                relPhaseMap.at<TYPE>(i, j) = NAN;
             else
                 relPhaseMap.at<TYPE>(i, j) = atan2(y, x);
         }
@@ -80,7 +80,7 @@ void phaseCalculator::calRelPhase_4step(const vector<Mat> &stripImg, Mat &relPha
             x = I1 - I3;
             b = 0.5 * sqrt(pow(y, 2) + pow(x, 2));
             if (b < BTH)
-                relPhaseMap.at<TYPE>(i, j) = NULL_PHASE_POS;
+                relPhaseMap.at<TYPE>(i, j) = NAN;
             else
                 relPhaseMap.at<TYPE>(i, j) = atan2(y, x);
         }
@@ -154,17 +154,32 @@ void phaseCalculator::calHeterodynePhase(const std::vector<cv::Mat> &relPhaseMap
     {
         for (int j = 0; j < hetetodynePhaseMap.cols; ++j)
         {
-            TYPE heterodynePhase;
+            TYPE phase123;
             TYPE phase1 = relPhaseMap[0].at<TYPE>(i, j);
             TYPE phase2 = relPhaseMap[1].at<TYPE>(i, j);
             TYPE phase3 = relPhaseMap[2].at<TYPE>(i, j);
 
-            if (phase1 > M_PI | phase2 > M_PI | phase3 > M_PI)
-                hetetodynePhaseMap.at<TYPE>(i, j) = NULL_PHASE_POS;
+            if (isnan(phase1) | isnan(phase2) | isnan(phase3))
+                hetetodynePhaseMap.at<TYPE>(i, j) = NAN;
             else
             {
-                heterodynePhase = (heterodyneSteps == TWO_STEP_HETERODYNE) ? calHeterodynePhase_2step(phase1, phase2, phase3) : calHeterodynePhase_3step(phase1, phase2, phase3);
-                hetetodynePhaseMap.at<TYPE>(i, j) = heterodynePhase;
+                if (heterodyneSteps == TWO_STEP_HETERODYNE)
+                {
+                    TYPE phase12, phase123, absPhase12;
+                    phase12 = heterodyne(phase1, phase2);
+                    phase123 = heterodyne(phase12, phase3);
+                    absPhase12 = phase12 + PI_2 * round((phase123 * ratio_3to2 - phase12) / PI_2);
+                    hetetodynePhaseMap.at<TYPE>(i, j) = absPhase12;
+                }
+                else
+                {
+                    TYPE absPhase13, phase13, phase23, phase123;
+                    phase13 = heterodyne(phase1, phase3);
+                    phase23 = heterodyne(phase2, phase3);
+                    phase123 = heterodyne(phase13, phase23);
+                    absPhase13 = phase13 + PI_2 * round((phase123 * ratio_3to2 - phase13) / PI_2);
+                    hetetodynePhaseMap.at<TYPE>(i, j) = absPhase13;
+                }
             }
         }
     }
@@ -181,7 +196,7 @@ void phaseCalculator::calAbsPhase(const vector<Mat> &relPhaseMap, Mat &absPhaseM
     }
 
     // Allocate memory for absPhaseMap.
-    absPhaseMap.create(relPhaseMap[  0].size(), CV_TYPE);
+    absPhaseMap.create(relPhaseMap[0].size(), CV_TYPE);
 
 // Calculate heterodyne phase and use it to unwrap relative phase.
 #pragma omp parallel for
@@ -189,18 +204,34 @@ void phaseCalculator::calAbsPhase(const vector<Mat> &relPhaseMap, Mat &absPhaseM
     {
         for (int j = 0; j < absPhaseMap.cols; ++j)
         {
-            TYPE heterodynePhase;
+            TYPE phase123;
             TYPE phase1 = relPhaseMap[0].at<TYPE>(i, j);
             TYPE phase2 = relPhaseMap[1].at<TYPE>(i, j);
             TYPE phase3 = relPhaseMap[2].at<TYPE>(i, j);
-            if (phase1 > M_PI | phase2 > M_PI | phase3 > M_PI)
-                absPhaseMap.at<TYPE>(i, j) = NULL_PHASE_NEG;
+
+            if (isnan(phase1) | isnan(phase2) | isnan(phase3))
+                absPhaseMap.at<TYPE>(i, j) = NAN;
             else
             {
-                heterodynePhase = (heterodyneSteps == TWO_STEP_HETERODYNE) ? calHeterodynePhase_2step(phase1, phase2, phase3) : calHeterodynePhase_3step(phase1, phase2, phase3);
-                absPhaseMap.at<TYPE>(i, j) = phase1 + PI_2 * round((heterodynePhase * ratio_3to1 - phase1) / PI_2);
+                if (heterodyneSteps == TWO_STEP_HETERODYNE)
+                {
+                    TYPE phase12, phase123, absPhase12;
+                    phase12 = heterodyne(phase1, phase2);
+                    phase123 = heterodyne(phase12, phase3);
+                    absPhase12 = phase12 + PI_2 * round((phase123 * ratio_3to2 - phase12) / PI_2);
+                    absPhaseMap.at<TYPE>(i, j) = phase1 + PI_2 * round((absPhase12 * ratio_2to1 - phase1) / PI_2);
+                }
+                else
+                {
+                    TYPE absPhase13, phase13, phase23, phase123;
+                    phase13 = heterodyne(phase1, phase3);
+                    phase23 = heterodyne(phase2, phase3);
+                    phase123 = heterodyne(phase13, phase23);
+                    absPhase13 = phase13 + PI_2 * round((phase123 * ratio_3to2 - phase13) / PI_2);
+                    absPhaseMap.at<TYPE>(i, j) = phase1 + PI_2 * round((absPhase13 * ratio_2to1 - phase1) / PI_2);
+                }
             }
-        } 
+        }
     }
     if (filter)
         medianBlur(absPhaseMap, absPhaseMap, PHASE_FILTER_WINSIZE);

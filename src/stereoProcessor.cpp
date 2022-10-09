@@ -146,7 +146,7 @@ void stereoProcessor::calDisparity(const Mat &absPhase1, const Mat &absPhase2, M
             {
                 TYPE x = absPhase1.at<TYPE>(i, j);
 
-                TYPE matchPoint = (x > 0)? searchPhase(x, absPhase2ROI.row(i - ROI2.y), interpolation) + ROI2.x : -1;
+                TYPE matchPoint = isnan(x)? -1 : searchPhase(x, absPhase2ROI.row(i - ROI2.y), interpolation) + ROI2.x;
                 if (matchPoint > -1)
                     disparity.at<TYPE>(i, j) = (j - matchPoint) > disparityTH ? j - matchPoint : 0;
                 else
@@ -164,7 +164,7 @@ TYPE stereoProcessor::searchPhase(TYPE x, const Mat &seq, bool interpolation)
     int j = 0;
     for (int i = 0; i < seq.cols; i++)
     {
-        if (seq.at<TYPE>(i) > 0)
+        if (~isnan(seq.at<TYPE>(i)))
         {
             TYPE tmp = abs(x - seq.at<TYPE>(i));
             if (tmp < delta)
@@ -174,8 +174,14 @@ TYPE stereoProcessor::searchPhase(TYPE x, const Mat &seq, bool interpolation)
             }
         }
     }
+    TYPE ans;
     if (delta < matchTH)
-        return j;
+    {
+        if(x - seq.at<TYPE>(j) > 0)
+            return (j == seq.cols - 1)? j : interpolate(seq.at<TYPE>(j), seq.at<TYPE>(j+1), j, j+1, x);
+        else
+            return (j == 0)? j : interpolate(seq.at<TYPE>(j-1), seq.at<TYPE>(j), j-1, j, x);
+    }
     else
         return -1;
 }
