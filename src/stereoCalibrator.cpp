@@ -3,22 +3,20 @@
 using namespace std;
 using namespace cv;
 
-stereoCalibrator::stereoCalibrator(int image_pairs, int board_width, int board_height, float square_size)
+stereoCalibrator::stereoCalibrator(cv::Size _boardSize, float _squareSize)
 {
-    updateCaliConfig(image_pairs, board_width, board_height, square_size);
+    updateCaliConfig(_boardSize, _squareSize);
 }
 
 stereoCalibrator::~stereoCalibrator()
 {
 }
 
-void stereoCalibrator::updateCaliConfig(int image_pairs, int board_width, int board_height, float square_size)
+void stereoCalibrator::updateCaliConfig(cv::Size _boardSize, float _squareSize)
 {
     // Update chessboard parameters.
-    imagePairs = image_pairs;
-    boardSize.height = board_height;
-    boardSize.width = board_width;
-    squareSize = square_size;
+    boardSize = _boardSize;
+    squareSize = _squareSize;
 
     // Calculate chessboard coordinates.
     for (int i = 0; i < boardSize.height; i++)
@@ -26,23 +24,24 @@ void stereoCalibrator::updateCaliConfig(int image_pairs, int board_width, int bo
             objectPoints.push_back(Point3f(j * squareSize, i * squareSize, 0));
 }
 
-void stereoCalibrator::calibrate(string caliImgPath1, string caliImgPath2, Size &imgSize, Mat &K1, Mat &D1, Mat &K2, Mat &D2, Mat &R, Mat &T, Mat &F, Mat &E)
+void stereoCalibrator::calibrate(const std::vector<cv::Mat> &imgSet1, const std::vector<cv::Mat> &imgSet2, cv::Mat &K1, cv::Mat &D1, cv::Mat &K2, cv::Mat &D2, cv::Mat &R, cv::Mat &T, cv::Mat &F, cv::Mat &E) const
 {
-    // Read images.
-    vector<Mat> imgSet1, imgSet2;
-    for (int i = 1; i <= imagePairs; i++)
+    if(imgSet1.empty() | imgSet2.empty())
     {
-        string number = to_string(i);
-        string suffix = ".bmp";
-        imgSet1.push_back(imread(caliImgPath1 + number + suffix, IMREAD_GRAYSCALE));
-        imgSet2.push_back(imread(caliImgPath2 + number + suffix, IMREAD_GRAYSCALE));
+        cout << "None calibration images!" << endl;
+        throw exception();
+    }
+    else if(imgSet1.size() != imgSet2.size())
+    {
+        cout << "Different number of calibration images!" << endl;
+        throw exception();
     }
 
     // Find corners.
     bool found1, found2;
     vector<vector<Point3f>> objectPointsSet;
     vector<vector<Point2f>> imgPoints1, imgPoints2;
-    for (int i = 0; i < imagePairs; i++)
+    for (int i = 0; i < imgSet1.size(); i++)
     {
         vector<Point2f> cornerPoints1, cornerPoints2;
         // Finding checker board corners
@@ -54,8 +53,8 @@ void stereoCalibrator::calibrate(string caliImgPath1, string caliImgPath2, Size 
         {
             TermCriteria criteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.001);
             // Refining pixel coordinates for given 2d points.
-            cornerSubPix(imgSet1[i], cornerPoints1, Size(5, 5), Size(-1, -1), criteria);
-            cornerSubPix(imgSet2[i], cornerPoints2, Size(5, 5), Size(-1, -1), criteria);
+            cornerSubPix(imgSet1[i], cornerPoints1, Size(11, 11), Size(-1, -1), criteria);
+            cornerSubPix(imgSet2[i], cornerPoints2, Size(11, 11), Size(-1, -1), criteria);
 
             objectPointsSet.push_back(objectPoints);
 
@@ -64,5 +63,4 @@ void stereoCalibrator::calibrate(string caliImgPath1, string caliImgPath2, Size 
         }
     }
     stereoCalibrate(objectPointsSet, imgPoints1, imgPoints2, K1, D1, K2, D2, imgSet1[0].size(), R, T, E, F);
-    imgSize = imgSet1[0].size();
 }

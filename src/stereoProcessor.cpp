@@ -13,7 +13,8 @@ stereoConfig::stereoConfig(cv::Size img_size, TYPE disparity_th, TYPE match_th, 
 stereoProcessor::stereoProcessor(const stereoConfig &cfg)
 {
     updateConfig(cfg);
-    calRectifyMap();
+    if (cfg.filePath != "")
+        calRectifyMap();
 }
 
 stereoProcessor::~stereoProcessor() {}
@@ -108,7 +109,7 @@ void stereoProcessor::calRectifyMap()
 {
     // Stereo rectify.
     Rect validPixROI1, validPixROI2;
-    stereoRectify(K1, D1, K2, D2, imgSize, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, imgSize, &validPixROI1, &validPixROI2);
+    stereoRectify(K1, D1, K2, D2, imgSize, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, 1, imgSize, &validPixROI1, &validPixROI2);
     ROI1.x = validPixROI1.x;
     ROI1.width = validPixROI1.width;
     ROI2.x = validPixROI2.x;
@@ -146,7 +147,7 @@ void stereoProcessor::calDisparity(const Mat &absPhase1, const Mat &absPhase2, M
             {
                 TYPE x = absPhase1.at<TYPE>(i, j);
 
-                TYPE matchPoint = isnan(x)? -1 : searchPhase(x, absPhase2ROI.row(i - ROI2.y), interpolation) + ROI2.x;
+                TYPE matchPoint = isnan(x) ? -1 : searchPhase(x, absPhase2ROI.row(i - ROI2.y), interpolation) + ROI2.x;
                 if (matchPoint > -1)
                     disparity.at<TYPE>(i, j) = (j - matchPoint) > disparityTH ? j - matchPoint : 0;
                 else
@@ -177,10 +178,10 @@ TYPE stereoProcessor::searchPhase(TYPE x, const Mat &seq, bool interpolation)
     TYPE ans;
     if (delta < matchTH)
     {
-        if(x - seq.at<TYPE>(j) > 0)
-            return (j == seq.cols - 1)? j : interpolate(seq.at<TYPE>(j), seq.at<TYPE>(j+1), j, j+1, x);
+        if (x - seq.at<TYPE>(j) > 0)
+            return (j == seq.cols - 1) ? j : interpolate(seq.at<TYPE>(j), seq.at<TYPE>(j + 1), j, j + 1, x);
         else
-            return (j == 0)? j : interpolate(seq.at<TYPE>(j-1), seq.at<TYPE>(j), j-1, j, x);
+            return (j == 0) ? j : interpolate(seq.at<TYPE>(j - 1), seq.at<TYPE>(j), j - 1, j, x);
     }
     else
         return -1;
