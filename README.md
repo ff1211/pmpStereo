@@ -1,2 +1,2 @@
 # pmpStereo
-C++ code about PMP stereo algorithm.
+C++ code of PMP stereo algorithm.
