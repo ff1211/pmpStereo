@@ -34,7 +34,7 @@ void phaseCalculator::calRelPhase_3step(const vector<Mat> &stripImg, Mat &relPha
     }
 
     relPhaseMap = Mat(stripImg[0].size(), CV_TYPE);
-#pragma omp parallel for
+#pragma omp parallel for simd
     for (int i = 0; i < stripImg[0].rows; ++i)
         for (int j = 0; j < stripImg[0].cols; ++j)
         {
@@ -66,7 +66,7 @@ void phaseCalculator::calRelPhase_4step(const vector<Mat> &stripImg, Mat &relPha
 
     relPhaseMap = Mat(stripImg[0].size(), CV_TYPE);
 
-#pragma omp parallel for
+#pragma omp parallel for simd
     for (int i = 0; i < stripImg[0].rows; ++i)
         for (int j = 0; j < stripImg[0].cols; ++j)
         {
@@ -149,7 +149,7 @@ void phaseCalculator::calHeterodynePhase(const std::vector<cv::Mat> &relPhaseMap
     hetetodynePhaseMap.create(relPhaseMap[0].size(), CV_TYPE);
 
 // Calculate heterodyne phase and use it to unwrap relative phase.
-#pragma omp parallel for
+#pragma omp parallel for simd
     for (int i = 0; i < hetetodynePhaseMap.rows; ++i)
     {
         for (int j = 0; j < hetetodynePhaseMap.cols; ++j)
@@ -199,7 +199,7 @@ void phaseCalculator::calAbsPhase(const vector<Mat> &relPhaseMap, Mat &absPhaseM
     absPhaseMap.create(relPhaseMap[0].size(), CV_TYPE);
 
 // Calculate heterodyne phase and use it to unwrap relative phase.
-#pragma omp parallel for
+#pragma omp parallel for simd
     for (int i = 0; i < absPhaseMap.rows; ++i)
     {
         for (int j = 0; j < absPhaseMap.cols; ++j)
