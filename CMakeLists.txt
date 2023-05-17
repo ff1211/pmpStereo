@@ -5,6 +5,7 @@ add_library(pmpStereo SHARED
     src/stereoCalibrator.cpp
     src/phaseCalculator.cpp
     src/stereoProcessor.cpp
+    src/speckle.cpp
 )
 
 set(CMAKE_CXX_STANDARD 11)
